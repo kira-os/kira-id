@@ -1,0 +1,5 @@
+1:"$Sreact.fragment"
+2:I[26482,["/_next/static/chunks/6dc23b7c3ed48b0b.js","/_next/static/chunks/eda7b49e29243e22.js","/_next/static/chunks/38e61b41954b684a.js","/_next/static/chunks/97aac24bfa7600fa.js"],"ViewportBoundary"]
+3:I[26482,["/_next/static/chunks/6dc23b7c3ed48b0b.js","/_next/static/chunks/eda7b49e29243e22.js","/_next/static/chunks/38e61b41954b684a.js","/_next/static/chunks/97aac24bfa7600fa.js"],"MetadataBoundary"]
+4:"$Sreact.suspense"
+0:{"buildId":"Bkbc8vCgN8orqFO-9OmrT","rsc":["$","$1","h",{"children":[["$","meta",null,{"name":"robots","content":"noindex"}],["$","$L2",null,{"children":[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]}],["$","div",null,{"hidden":true,"children":["$","$L3",null,{"children":["$","$4",null,{"name":"Next.Metadata","children":[["$","title","0",{"children":"KIRA ID - Connect"}],["$","meta","1",{"name":"description","content":"Universal identity for the KIRA ecosystem"}]]}]}]}],null]}],"loading":null,"isPartial":false}
