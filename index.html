@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KIRA ID | Universal Identity System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --bg-primary: #000000;
+            --accent-cyan: #00D4FF;
+            --accent-purple: #7C3AED;
+            --accent-pink: #EC4899;
+            --accent-violet: #8B5CF6;
+            --text-primary: #FFFFFF;
+            --text-secondary: rgba(255, 255, 255, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+            --ease-snap: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        #shader-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.5;
+        }
+
+        .noise-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            opacity: 0.03;
+            pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 60px 40px;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            margin-bottom: 60px;
+            animation: fadeUp 0.8s var(--ease-snap) forwards;
+            opacity: 0;
+        }
+
+        .brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .logo {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            font-size: 24px;
+            box-shadow: 0 8px 32px rgba(124, 58, 237, 0.4);
+        }
+
+        h1 {
+            font-size: clamp(40px, 6vw, 72px);
+            font-weight: 600;
+            letter-spacing: -0.03em;
+            line-height: 1;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.7) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 18px;
+            color: var(--text-secondary);
+            font-weight: 300;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        /* Identity Cards */
+        .identity-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .id-card {
+            position: relative;
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 32px;
+            transform-style: preserve-3d;
+            transition: all 0.4s var(--ease-smooth);
+            opacity: 0;
+            animation: fadeUp 0.6s var(--ease-snap) forwards;
+            animation-delay: calc(var(--index) * 100ms);
+        }
+
+        .id-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 24px;
+            padding: 1px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+        }
+
+        .id-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(124, 58, 237, 0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 60px rgba(124, 58, 237, 0.15);
+        }
+
+        .id-card.connected {
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .platform-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .platform-icon.wallet {
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-violet));
+            box-shadow: 0 8px 24px rgba(124, 58, 237, 0.3);
+        }
+
+        .platform-icon.telegram {
+            background: linear-gradient(135deg, #0088cc, #00aced);
+            box-shadow: 0 8px 24px rgba(0, 172, 237, 0.3);
+        }
+
+        .platform-icon.x {
+            background: linear-gradient(135deg, #000000, #1a1a1a);
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        .card-title {
+            flex: 1;
+        }
+
+        .card-title h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .card-title .status {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-family: 'JetBrains Mono', monospace;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .card-title .status.connected {
+            color: #10B981;
+        }
+
+        /* Form Elements */
+        .input-group {
+            display: flex;
+            gap: 12px;
+        }
+
+        .input-field {
+            flex: 1;
+            padding: 14px 18px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 15px;
+            transition: all 0.2s ease;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: rgba(124, 58, 237, 0.5);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .input-field::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .btn {
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s var(--ease-smooth);
+            border: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan));
+            color: #000;
+        }
+
+        .btn-primary:hover {
+            transform: scale(1.02);
+            box-shadow: 0 8px 24px rgba(124, 58, 237, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+            border: 1px solid var(--glass-border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .connected-info {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            padding: 12px 16px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 12px;
+            color: #10B981;
+        }
+
+        /* Score Card */
+        .score-section {
+            background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(0, 212, 255, 0.05));
+            border: 1px solid rgba(124, 58, 237, 0.2);
+            border-radius: 24px;
+            padding: 40px;
+            text-align: center;
+            margin-top: 40px;
+            opacity: 0;
+            animation: fadeUp 0.6s var(--ease-snap) forwards;
+            animation-delay: 0.4s;
+        }
+
+        .score-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 16px;
+        }
+
+        .score-value {
+            font-size: 72px;
+            font-weight: 600;
+            letter-spacing: -0.03em;
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 16px;
+        }
+
+        .tier-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: rgba(124, 58, 237, 0.2);
+            border: 1px solid rgba(124, 58, 237, 0.3);
+            border-radius: 100px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        /* Footer */
+        footer {
+            margin-top: 60px;
+            text-align: center;
+            padding-top: 40px;
+            border-top: 1px solid var(--glass-border);
+            color: var(--text-secondary);
+            font-size: 14px;
+            opacity: 0;
+            animation: fadeUp 0.6s var(--ease-snap) forwards;
+            animation-delay: 0.5s;
+        }
+
+        footer a {
+            color: var(--accent-cyan);
+            text-decoration: none;
+        }
+
+        /* Animations */
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container { padding: 40px 20px; }
+            .identity-grid { grid-template-columns: 1fr; }
+            .input-group { flex-direction: column; }
+            .score-value { font-size: 48px; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="shader-canvas"></canvas>
+    <div class="noise-overlay"></div>
+
+    <div class="container">
+        <header>
+            <div class="brand">
+                <div class="logo">ID</div>
+                <h1>KIRA ID</h1>
+            </div>
+            <p class="subtitle">Universal identity layer. Link your wallet, Telegram, and X. Build your reputation across the ecosystem.</p>
+        </header>
+
+        <div class="identity-grid">
+            <div class="id-card connected" style="--index: 0">
+                <div class="card-header">
+                    <div class="platform-icon wallet">W</div>
+                    <div class="card-title">
+                        <h3>Wallet</h3>
+                        <span class="status connected">Connected</span>
+                    </div>
+                </div>
+                <div class="connected-info">
+                    7xPv9...3kL2mN · 2.45 SOL
+                </div>
+            </div>
+
+            <div class="id-card" style="--index: 1">
+                <div class="card-header">
+                    <div class="platform-icon telegram">T</div>
+                    <div class="card-title">
+                        <h3>Telegram</h3>
+                        <span class="status">Not linked</span>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <input type="text" class="input-field" placeholder="@username">
+                    <button class="btn btn-primary">Link</button>
+                </div>
+            </div>
+
+            <div class="id-card" style="--index: 2">
+                <div class="card-header">
+                    <div class="platform-icon x">X</div>
+                    <div class="card-title">
+                        <h3>X / Twitter</h3>
+                        <span class="status">Not linked</span>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <input type="text" class="input-field" placeholder="@handle">
+                    <button class="btn btn-primary">Link</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="score-section">
+            <div class="score-label">KIRA Score</div>
+            <div class="score-value">247</div>
+            <div class="tier-badge">Bronze Tier</div>
+        </div>
+
+        <footer>
+            <p>Part of the <a href="https://kiraos.live">KIRA OS Ecosystem</a></p>
+        </footer>
+    </div>
+
+    <script>
+        // WebGL Shader Background - Purple/Cyan
+        const canvas = document.getElementById('shader-canvas');
+        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+
+        if (gl) {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            gl.viewport(0, 0, canvas.width, canvas.height);
+
+            const vertexShaderSource = `
+                attribute vec2 position;
+                void main() {
+                    gl_Position = vec4(position, 0.0, 1.0);
+                }
+            `;
+
+            const fragmentShaderSource = `
+                precision mediump float;
+                uniform vec2 resolution;
+                uniform float time;
+
+                vec3 palette(float t) {
+                    vec3 a = vec3(0.48, 0.23, 0.93);
+                    vec3 b = vec3(0.0, 0.83, 1.0);
+                    vec3 c = vec3(0.93, 0.27, 0.60);
+                    return a + b * cos(6.28318 * (c * t + vec3(0.0, 0.33, 0.67)));
+                }
+
+                void main() {
+                    vec2 uv = (gl_FragCoord.xy * 2.0 - resolution.xy) / min(resolution.x, resolution.y);
+                    vec2 uv0 = uv;
+                    vec3 finalColor = vec3(0.0);
+
+                    for (float i = 0.0; i < 2.0; i++) {
+                        uv = fract(uv * 1.3) - 0.5;
+                        float d = length(uv) * exp(-length(uv0));
+                        vec3 col = palette(length(uv0) + i * 0.3 + time * 0.06);
+                        d = sin(d * 8.0 + time * 0.4) / 8.0;
+                        d = abs(d);
+                        d = pow(0.012 / d, 1.15);
+                        finalColor += col * d * 0.6;
+                    }
+
+                    gl_FragColor = vec4(finalColor, 1.0);
+                }
+            `;
+
+            function createShader(gl, type, source) {
+                const shader = gl.createShader(type);
+                gl.shaderSource(shader, source);
+                gl.compileShader(shader);
+                return shader;
+            }
+
+            const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
+            const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
+
+            const program = gl.createProgram();
+            gl.attachShader(program, vertexShader);
+            gl.attachShader(program, fragmentShader);
+            gl.linkProgram(program);
+            gl.useProgram(program);
+
+            const vertices = new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]);
+            const buffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+            gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+            const position = gl.getAttribLocation(program, 'position');
+            gl.enableVertexAttribArray(position);
+            gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
+
+            const resolutionUniform = gl.getUniformLocation(program, 'resolution');
+            const timeUniform = gl.getUniformLocation(program, 'time');
+
+            let startTime = Date.now();
+
+            function render() {
+                const time = (Date.now() - startTime) * 0.001;
+                gl.uniform2f(resolutionUniform, canvas.width, canvas.height);
+                gl.uniform1f(timeUniform, time);
+                gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+                requestAnimationFrame(render);
+            }
+
+            render();
+
+            window.addEventListener('resize', () => {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                gl.viewport(0, 0, canvas.width, canvas.height);
+            });
+        }
+    </script>
+</body>
+</html>
