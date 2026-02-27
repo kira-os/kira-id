@@ -45,7 +45,7 @@ bot.command('start', async (ctx) => {
   ctx.reply(
     `🎉 Welcome to KIRA!\n\n` +
     `Connect your accounts to earn rewards:\n` +
-    `1. Connect wallet at kiraos.live/connect\n` +
+    `1. Connect wallet at kira.ngo/connect\n` +
     `2. Return and click "Link Telegram"\n` +
     `3. Your accounts will be linked automatically\n\n` +
     `Commands:\n` +
@@ -66,7 +66,7 @@ bot.command('score', async (ctx) => {
     .single();
   
   if (!data) {
-    ctx.reply('❌ No linked wallet found. Connect at kiraos.live/connect first!');
+    ctx.reply('❌ No linked wallet found. Connect at kira.ngo/connect first!');
     return;
   }
   
